@@ -1,0 +1,5 @@
+# Profile used when the discovery server runs in Docker Compose.
+logging:
+  structured:
+    format:
+      console: ecs

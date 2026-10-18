@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: discovery-server
+
+server:
+  port: 8761
+
+management:
+  server:
+    port: 9761                 # actuator lives only here, never on the API port (ADR-0023)
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+# Standalone registry: it does not register with itself or copy another registry.
+# This server is self-contained (no config-server import) so it can start first.
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Local development settings: instances that stop are removed quickly,
+    # and the server answers at once after a restart.
+    enable-self-preservation: false
+    wait-time-in-ms-when-sync-empty: 0
+    eviction-interval-timer-in-ms: 5000

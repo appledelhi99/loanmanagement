@@ -1,0 +1,12 @@
+# The Docker build context is the repository root (see deploy/docker/Dockerfile).
+# Keep it small: only Maven files, sources, config-repo and the container scripts are needed.
+**/target/
+.git/
+.github/
+.idea/
+.vscode/
+**/*.iml
+**/.DS_Store
+.env
+docs/
+deploy/compose/

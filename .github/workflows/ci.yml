@@ -1,0 +1,99 @@
+# Continuous integration: every push to main and every pull request.
+# All build and test evidence for this project comes from these runs (ADR-0019, owner decision D7).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COMPOSE_FILE: deploy/compose/compose.yaml
+  COMPOSE_PROFILES: core
+
+jobs:
+  build:
+    name: Build and test (JDK 25)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Temurin 25 with a Maven cache
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build, run all tests and check rules
+        run: ./mvnw -B -ntp verify
+
+      - name: Record the dependency versions Maven resolved
+        if: always()
+        run: ./mvnw -B -ntp -q dependency:tree -DoutputFile=target/dependency-tree.txt
+
+      - name: Upload test, coverage and dependency reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+            **/target/site/jacoco/
+            **/target/dependency-tree.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  compose-smoke:
+    name: Compose smoke test
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Build images and start the core profile
+        run: docker compose up --detach --build --wait --wait-timeout 300
+
+      - name: Config server serves the docker profile
+        run: |
+          curl --fail --silent --show-error http://localhost:8888/smoke-test/docker > config.json
+          grep -q 'application-docker.yml' config.json
+          grep -q 'application.yml' config.json
+
+      - name: Eureka registry answers
+        run: |
+          curl --fail --silent --show-error --header 'Accept: application/json' http://localhost:8761/eureka/apps
+
+      - name: Actuator is not on the API ports
+        run: |
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8888/actuator)" = "404"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8761/actuator)" = "404"
+
+      - name: Containers run as the non-root user 10001
+        run: |
+          for service in config-server discovery-server; do
+            uid="$(docker compose exec -T "${service}" id -u)"
+            echo "${service} runs as uid ${uid}"
+            test "${uid}" = "10001"
+          done
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

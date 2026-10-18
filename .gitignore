@@ -1,0 +1,21 @@
+# Build output
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local secrets (copy .env.example to .env; never commit .env)
+.env
+
+# Logs
+*.log

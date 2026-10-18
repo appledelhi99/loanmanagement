@@ -1,0 +1,20 @@
+# Weekly dependency update pull requests (ADR-0019).
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      spring-platform:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/deploy/docker"
+    schedule:
+      interval: weekly

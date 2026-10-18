@@ -1,0 +1,65 @@
+# Local runtime for the Loan Management Platform.
+#
+#   docker compose -f deploy/compose/compose.yaml --profile core up -d --build --wait
+#   docker compose -f deploy/compose/compose.yaml --profile core down
+#
+# Profiles: core (platform + business services, grows phase by phase), observability (Phase 6).
+# Every application container: non-root, read-only root filesystem, no Linux capabilities,
+# health checked on its management port, restarted on failure (ADR-0017, ADR-0023).
+
+name: lmp
+
+x-spring-service: &spring-service
+  profiles: ["core"]
+  restart: on-failure
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  config-server:
+    <<: *spring-service
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        MODULE: services/config-server
+    image: lmp/config-server:local
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Read the repository folder directly, so a config edit needs only a client restart.
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:/config-repo/
+    volumes:
+      - ../../config-repo:/config-repo:ro
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD", "healthcheck", "9888"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  discovery-server:
+    <<: *spring-service
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        MODULE: services/discovery-server
+    image: lmp/discovery-server:local
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_HOSTNAME: discovery-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "healthcheck", "9761"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s

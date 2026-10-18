@@ -1,0 +1,10 @@
+# Kubernetes profile (kind and EKS): no Eureka. Services call each other through
+# Kubernetes Service DNS names, set per service as http://<service>:<port> (ADR-0006).
+eureka:
+  client:
+    enabled: false
+
+logging:
+  structured:
+    format:
+      console: ecs

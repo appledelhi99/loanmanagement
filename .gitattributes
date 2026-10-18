@@ -1,0 +1,9 @@
+# Normalise line endings in the repository; shell scripts must stay LF to run in containers.
+* text=auto eol=lf
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.zip binary

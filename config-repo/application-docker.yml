@@ -1,0 +1,13 @@
+# Docker Compose profile: Eureka discovery and JSON logs.
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  structured:
+    format:
+      console: ecs           # Elastic Common Schema JSON, collected by Grafana Alloy (ADR-0016)

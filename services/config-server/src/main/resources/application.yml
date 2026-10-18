@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: config-server
+  profiles:
+    include: native            # file-based backend; no Git access needed at runtime (ADR-0017)
+  cloud:
+    config:
+      server:
+        native:
+          # Default: the copy of config-repo/ packaged inside this jar (Kubernetes, AWS, tests).
+          # Docker Compose overrides this with file:/config-repo/ (a read-only mount).
+          search-locations: classpath:/config-repo/
+
+server:
+  port: 8888
+
+management:
+  server:
+    port: 9888                 # actuator lives only here, never on the API port (ADR-0023)
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never

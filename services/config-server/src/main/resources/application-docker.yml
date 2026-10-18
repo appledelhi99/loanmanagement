@@ -1,0 +1,5 @@
+# Profile used when the config server itself runs in Docker Compose or Kubernetes.
+logging:
+  structured:
+    format:
+      console: ecs
